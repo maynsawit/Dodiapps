@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DodiApps - Ver 8.4</title>
+
+<style>
+body{
+font-family:system-ui,Segoe UI,Arial;
+background:#f1f3f6;
+margin:0;
+padding:15px;
+color:#333;
+}
+.app{
+max-width:480px;
+margin:auto;
+}
+.card{
+background:white;
+border-radius:12px;
+padding:16px;
+margin-bottom:16px;
+box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+h2{
+margin-top:0;
+font-size:18px;
+}
+label{
+font-size:13px;
+font-weight:600;
+display:block;
+margin-top:10px;
+}
+input,select{
+width:100%;
+padding:10px;
+margin-top:4px;
+border-radius:8px;
+border:1px solid #ccc;
+font-size:14px;
+box-sizing:border-box;
+}
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:10px;
+background:#2e7dff;
+color:white;
+font-size:15px;
+font-weight:600;
+}
+button.delete{
+background:#e53935;
+margin-top:4px;
+}
+button.edit{
+background:#ff9800;
+margin-top:4px;
+}
+.summary{
+background:#f7f9fc;
+padding:10px;
+border-radius:8px;
+margin-top:10px;
+font-size:14px;
+}
+table{
+width:100%;
+border-collapse:collapse;
+font-size:13px;
+}
+th,td{
+padding:6px;
+border-bottom:1px solid #eee;
+text-align:left;
+}
+th{
+font-weight:600;
+}
+.action-btn{
+display:flex;
+gap:4px;
+}
+.action-btn button{
+padding:4px 6px;
+font-size:12px;
+width:auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="card">
+<h2>Input Data Panen</h2>
+
+<label>Tanggal</label>
+<input type="date" id="tanggal">
+
+<label>Lokasi</label>
+<select id="lokasi" onchange="hitung()">
+<option>Plasma 5</option>
+<option>Kapar</option>
+<option>Agro</option>
+<option>Plasma 4</option>
+<option>Kebun Bersama</option>
+</select>
+
+<label>Jumlah Panen (kg)</label>
+<input id="panen" inputmode="numeric" pattern="[0-9]*" oninput="formatInput(this);hitung()">
+
+<label>Harga / kg</label>
+<input id="harga" inputmode="numeric" pattern="[0-9]*" oninput="formatInput(this);hitung()">
+
+<label>Upah Panen</label>
+<input id="upah" inputmode="numeric" pattern="[0-9]*" oninput="formatInput(this);hitung()">
+
+<div class="summary">
+<div>Potongan Perawatan : <b id="potongan">Rp 0</b></div>
+<div>Bruto : <b id="bruto">Rp 0</b></div>
+<div>Kotor : <b id="kotor">Rp 0</b></div>
+<div>Fee Pengawas : <b id="fee">Rp 0</b></div>
+<div><b>Total Bersih : <span id="bersih">Rp 0</span></b></div>
+</div>
+
+<button onclick="simpan();clearFormPanen()">Simpan Laporan</button>
+<button onclick="kirimWA()">Kirim WhatsApp</button>
+
+</div>
+
+<div class="card">
+<h2>Input Transfer</h2>
+
+<input type="hidden" id="editTransferIndex">
+
+<label>Tanggal</label>
+<input type="date" id="tglTransfer">
+
+<label>Jumlah</label>
+<input id="jumlahTransfer" inputmode="numeric" pattern="[0-9]*" oninput="formatInput(this)">
+
+<label>Catatan</label>
+<input id="catatanTransfer">
+
+<button onclick="simpanTransfer();clearFormTransfer()">Simpan Transfer</button>
+<button onclick="kirimTransferWA()">Kirim WhatsApp</button>
+
+</div>
+
+<div class="card">
+<h2>Riwayat Panen</h2>
+<table>
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Lokasi</th>
+<th>Panen</th>
+<th>Bersih</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="tblPanen"></tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Riwayat Transfer</h2>
+<table>
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Jumlah</th>
+<th>Catatan</th>
+<th>Aksi</th>
+</tr>
+</thead>
+<tbody id="tblTransfer"></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+
+function tanggalIndonesia(tgl){
+
+if(!tgl) return "";
+
+let bulan=[
+"Januari","Februari","Maret","April","Mei","Juni",
+"Juli","Agustus","September","Oktober","November","Desember"
+];
+
+let p=tgl.split("-");
+
+return Number(p[2])+" "+bulan[Number(p[1])-1]+" "+p[0];
+
+}
+function angka(v){
+return Number(v.replace(/\./g,""))||0;
+}
+
+function rupiah(n){
+return "Rp " + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,".");
+}
+
+function formatInput(el){
+let v = el.value.replace(/\D/g,"");
+if(v===""){el.value="";return;}
+el.value = v.replace(/\B(?=(\d{3})+(?!\d))/g,".");
+}
+
+function potonganLokasi(l){
+if(l==="Plasma 5") return 500000;
+if(l==="Kapar") return 1000000;
+if(l==="Agro") return 1000000;
+return 0;
+}
+
+function feePersen(l){
+if(l==="Plasma 5") return 0.15;
+if(l==="Kapar") return 0.15;
+if(l==="Agro") return 0.17;
+return 0;
+}
+
+function hitung(){
+
+let panen = angka(document.getElementById("panen").value);
+let harga = angka(document.getElementById("harga").value);
+let upah = angka(document.getElementById("upah").value);
+let lokasi = document.getElementById("lokasi").value;
+
+let bruto = panen * harga;
+let potongan = potonganLokasi(lokasi);
+let kotor = bruto - upah - potongan;
+let fee = Math.round(kotor * feePersen(lokasi));
+let bersih = kotor - fee;
+
+document.getElementById("potongan").innerText = rupiah(potongan);
+document.getElementById("bruto").innerText = rupiah(bruto);
+document.getElementById("kotor").innerText = rupiah(kotor);
+document.getElementById("fee").innerText = rupiah(fee);
+document.getElementById("bersih").innerText = rupiah(bersih);
+
+return {panen,bersih,lokasi};
+
+}
+
+function simpan(){
+
+let h = hitung();
+
+let data = JSON.parse(localStorage.getItem("panenData")) || [];
+
+data.push({
+tanggal:document.getElementById("tanggal").value,
+lokasi:h.lokasi,
+panen:h.panen,
+bersih:h.bersih
+});
+
+localStorage.setItem("panenData",JSON.stringify(data));
+
+renderPanen();
+
+}
+
+function renderPanen(){
+
+let data = JSON.parse(localStorage.getItem("panenData")) || [];
+
+let html="";
+
+data.forEach((d,i)=>{
+
+html += `<tr>
+<td>${d.tanggal}</td>
+<td>${d.lokasi}</td>
+<td>${d.panen}</td>
+<td>${rupiah(d.bersih)}</td>
+<td><button class="delete" onclick="hapusPanen(${i})">X</button></td>
+</tr>`;
+
+});
+
+document.getElementById("tblPanen").innerHTML = html;
+
+}
+
+function hapusPanen(i){
+
+let data = JSON.parse(localStorage.getItem("panenData")) || [];
+
+data.splice(i,1);
+
+localStorage.setItem("panenData",JSON.stringify(data));
+
+renderPanen();
+
+}
+
+function kirimWA(){
+
+let tanggal=tanggalIndonesia(document.getElementById("tanggal").value);
+let lokasi=document.getElementById("lokasi").value;
+
+let panen=document.getElementById("panen").value;
+let harga=document.getElementById("harga").value;
+let upah=document.getElementById("upah").value;
+
+let pot=document.getElementById("potongan").innerText;
+let fee=document.getElementById("fee").innerText;
+let bersih=document.getElementById("bersih").innerText;
+
+let bruto=document.getElementById("bruto").innerText;
+
+let text=`LAPORAN PANEN
+
+Tanggal : ${tanggal}
+Lokasi  :${lokasi}
+
+Hasil Panen      : ${panen} kg
+Harga/kg         : Rp ${harga}
+
+Pendapatan kotor : ${bruto}
+Upah panen       : Rp ${upah}
+Potongan Biaya Perawatan : ${pot}
+Fee Pengawas     : ${fee}
+
+━━━━━━━━━━━━━━━━━━━━━
+Pendapatan Bersih : ${bersih}
+━━━━━━━━━━━━━━━━━━━━━`;
+
+let url="https://wa.me/?text="+encodeURIComponent(text);
+
+window.open(url);
+
+}
+
+function kirimTransferWA(){
+
+let tanggal=tanggalIndonesia(document.getElementById("tglTransfer").value);
+let jumlah=document.getElementById("jumlahTransfer").value;
+let catatan=document.getElementById("catatanTransfer").value;
+
+let text=`LAPORAN TRANSFER
+
+${tanggal}
+
+Jumlah : Rp ${jumlah}
+Catatan : ${catatan}`;
+
+let url="https://wa.me/?text="+encodeURIComponent(text);
+
+window.open(url);
+
+}
+
+function simpanTransfer(){
+
+let data = JSON.parse(localStorage.getItem("transferData")) || [];
+
+let idx = document.getElementById("editTransferIndex").value;
+
+let obj = {
+tanggal:document.getElementById("tglTransfer").value,
+jumlah:angka(document.getElementById("jumlahTransfer").value),
+catatan:document.getElementById("catatanTransfer").value
+};
+
+if(idx===""){
+data.push(obj);
+}else{
+data[idx]=obj;
+document.getElementById("editTransferIndex").value="";
+}
+
+localStorage.setItem("transferData",JSON.stringify(data));
+
+renderTransfer();
+
+}
+
+function renderTransfer(){
+
+let data = JSON.parse(localStorage.getItem("transferData")) || [];
+
+let html="";
+
+data.forEach((d,i)=>{
+
+html += `<tr>
+<td>${d.tanggal}</td>
+<td>${rupiah(d.jumlah)}</td>
+<td>${d.catatan}</td>
+<td class="action-btn">
+<button class="edit" onclick="editTransfer(${i})">Edit</button>
+<button class="delete" onclick="hapusTransfer(${i})">Hapus</button>
+</td>
+</tr>`;
+
+});
+
+document.getElementById("tblTransfer").innerHTML = html;
+
+}
+
+function editTransfer(i){
+
+let data = JSON.parse(localStorage.getItem("transferData")) || [];
+
+let d = data[i];
+
+document.getElementById("editTransferIndex").value=i;
+document.getElementById("tglTransfer").value=d.tanggal;
+document.getElementById("jumlahTransfer").value=d.jumlah.toString().replace(/\B(?=(\d{3})+(?!\d))/g,".");
+document.getElementById("catatanTransfer").value=d.catatan;
+
+window.scrollTo({top:0,behavior:"smooth"});
+
+}
+
+function hapusTransfer(i){
+
+let data = JSON.parse(localStorage.getItem("transferData")) || [];
+
+data.splice(i,1);
+
+localStorage.setItem("transferData",JSON.stringify(data));
+
+renderTransfer();
+
+}
+
+renderPanen();
+renderTransfer();
+
+</script>
+
+</body>
+</html>
