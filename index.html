@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DodiApps - Ver 8.4</title>
+<title>DodiApps - Ver 8.6 Stable</title>
 
 <style>
 body{
@@ -105,7 +106,7 @@ width:auto;
 <input type="date" id="tanggal">
 
 <label>Lokasi</label>
-<select id="lokasi" onchange="hitung()">
+<select id="lokasi" onchange="cekLokasi();hitung()">
 <option>Plasma 5</option>
 <option>Kapar</option>
 <option>Agro</option>
@@ -113,14 +114,25 @@ width:auto;
 <option>Kebun Bersama</option>
 </select>
 
+<div id="inputPanenBox">
+
 <label>Jumlah Panen (kg)</label>
-<input id="panen" inputmode="numeric" pattern="[0-9]*" oninput="formatInput(this);hitung()">
+<input id="panen" inputmode="numeric" oninput="formatInput(this);hitung()">
 
 <label>Harga / kg</label>
-<input id="harga" inputmode="numeric" pattern="[0-9]*" oninput="formatInput(this);hitung()">
+<input id="harga" inputmode="numeric" oninput="formatInput(this);hitung()">
 
 <label>Upah Panen</label>
-<input id="upah" inputmode="numeric" pattern="[0-9]*" oninput="formatInput(this);hitung()">
+<input id="upah" inputmode="numeric" oninput="formatInput(this);hitung()">
+
+</div>
+
+<div id="inputBersihBox" style="display:none">
+
+<label>Penghasilan Bersih</label>
+<input id="inputBersih" inputmode="numeric" oninput="formatInput(this);hitung()">
+
+</div>
 
 <div class="summary">
 <div>Potongan Perawatan : <b id="potongan">Rp 0</b></div>
@@ -143,7 +155,7 @@ width:auto;
 <input type="date" id="tglTransfer">
 
 <label>Jumlah</label>
-<input id="jumlahTransfer" inputmode="numeric" pattern="[0-9]*" oninput="formatInput(this)">
+<input id="jumlahTransfer" inputmode="numeric" oninput="formatInput(this)">
 
 <label>Catatan</label>
 <input id="catatanTransfer">
@@ -188,19 +200,12 @@ width:auto;
 <script>
 
 function tanggalIndonesia(tgl){
-
 if(!tgl) return "";
-
-let bulan=[
-"Januari","Februari","Maret","April","Mei","Juni",
-"Juli","Agustus","September","Oktober","November","Desember"
-];
-
+let bulan=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 let p=tgl.split("-");
-
 return Number(p[2])+" "+bulan[Number(p[1])-1]+" "+p[0];
-
 }
+
 function angka(v){
 return Number(v.replace(/\./g,""))||0;
 }
@@ -211,8 +216,35 @@ return "Rp " + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,".");
 
 function formatInput(el){
 let v = el.value.replace(/\D/g,"");
-if(v===""){el.value="";return;}
 el.value = v.replace(/\B(?=(\d{3})+(?!\d))/g,".");
+}
+
+function cekLokasi(){
+
+let lokasi = document.getElementById("lokasi").value;
+let simple = (lokasi==="Plasma 4" || lokasi==="Kebun Bersama");
+
+document.getElementById("inputPanenBox").style.display = simple ? "none":"block";
+document.getElementById("inputBersihBox").style.display = simple ? "block":"none";
+document.querySelector(".summary").style.display = simple ? "none":"block";
+
+resetHitung();
+
+}
+
+function resetHitung(){
+
+document.getElementById("panen").value="";
+document.getElementById("harga").value="";
+document.getElementById("upah").value="";
+document.getElementById("inputBersih").value="";
+
+document.getElementById("potongan").innerText="Rp 0";
+document.getElementById("bruto").innerText="Rp 0";
+document.getElementById("kotor").innerText="Rp 0";
+document.getElementById("fee").innerText="Rp 0";
+document.getElementById("bersih").innerText="Rp 0";
+
 }
 
 function potonganLokasi(l){
@@ -231,10 +263,20 @@ return 0;
 
 function hitung(){
 
+let lokasi = document.getElementById("lokasi").value;
+
+if(lokasi==="Plasma 4" || lokasi==="Kebun Bersama"){
+
+let bersih = angka(document.getElementById("inputBersih").value||"0");
+document.getElementById("bersih").innerText = rupiah(bersih);
+
+return {panen:0,bersih,lokasi};
+
+}
+
 let panen = angka(document.getElementById("panen").value);
 let harga = angka(document.getElementById("harga").value);
 let upah = angka(document.getElementById("upah").value);
-let lokasi = document.getElementById("lokasi").value;
 
 let bruto = panen * harga;
 let potongan = potonganLokasi(lokasi);
@@ -255,7 +297,6 @@ return {panen,bersih,lokasi};
 function simpan(){
 
 let h = hitung();
-
 let data = JSON.parse(localStorage.getItem("panenData")) || [];
 
 data.push({
@@ -266,15 +307,13 @@ bersih:h.bersih
 });
 
 localStorage.setItem("panenData",JSON.stringify(data));
-
 renderPanen();
 
 }
 
 function renderPanen(){
 
-let data = JSON.parse(localStorage.getItem("panenData")) || [];
-
+let data = JSON.parse(localStorage.getItem("panenData")) || "";
 let html="";
 
 data.forEach((d,i)=>{
@@ -296,11 +335,9 @@ document.getElementById("tblPanen").innerHTML = html;
 function hapusPanen(i){
 
 let data = JSON.parse(localStorage.getItem("panenData")) || [];
-
 data.splice(i,1);
 
 localStorage.setItem("panenData",JSON.stringify(data));
-
 renderPanen();
 
 }
@@ -310,6 +347,24 @@ function kirimWA(){
 let tanggal=tanggalIndonesia(document.getElementById("tanggal").value);
 let lokasi=document.getElementById("lokasi").value;
 
+if(lokasi==="Plasma 4" || lokasi==="Kebun Bersama"){
+
+let bersih=document.getElementById("inputBersih").value;
+
+let text=`LAPORAN PANEN
+
+Tanggal : ${tanggal}
+Lokasi  : ${lokasi}
+
+━━━━━━━━━━━━━━━━━━━━━━
+Pendapatan Bersih : Rp ${bersih}
+━━━━━━━━━━━━━━━━━━━━━━`;
+
+window.open("https://wa.me/?text="+encodeURIComponent(text));
+return;
+
+}
+
 let panen=document.getElementById("panen").value;
 let harga=document.getElementById("harga").value;
 let upah=document.getElementById("upah").value;
@@ -317,7 +372,6 @@ let upah=document.getElementById("upah").value;
 let pot=document.getElementById("potongan").innerText;
 let fee=document.getElementById("fee").innerText;
 let bersih=document.getElementById("bersih").innerText;
-
 let bruto=document.getElementById("bruto").innerText;
 
 let text=`LAPORAN PANEN
@@ -337,9 +391,7 @@ Fee Pengawas     : ${fee}
 Pendapatan Bersih : ${bersih}
 ━━━━━━━━━━━━━━━━━━━━━━`;
 
-let url="https://wa.me/?text="+encodeURIComponent(text);
-
-window.open(url);
+window.open("https://wa.me/?text="+encodeURIComponent(text));
 
 }
 
@@ -357,16 +409,13 @@ Jumlah  : Rp ${jumlah}
 
 Catatan : ${catatan}`;
 
-let url="https://wa.me/?text="+encodeURIComponent(text);
-
-window.open(url);
+window.open("https://wa.me/?text="+encodeURIComponent(text));
 
 }
 
 function simpanTransfer(){
 
 let data = JSON.parse(localStorage.getItem("transferData")) || [];
-
 let idx = document.getElementById("editTransferIndex").value;
 
 let obj = {
@@ -383,7 +432,6 @@ document.getElementById("editTransferIndex").value="";
 }
 
 localStorage.setItem("transferData",JSON.stringify(data));
-
 renderTransfer();
 
 }
@@ -391,7 +439,6 @@ renderTransfer();
 function renderTransfer(){
 
 let data = JSON.parse(localStorage.getItem("transferData")) || [];
-
 let html="";
 
 data.forEach((d,i)=>{
@@ -415,7 +462,6 @@ document.getElementById("tblTransfer").innerHTML = html;
 function editTransfer(i){
 
 let data = JSON.parse(localStorage.getItem("transferData")) || [];
-
 let d = data[i];
 
 document.getElementById("editTransferIndex").value=i;
@@ -430,47 +476,28 @@ window.scrollTo({top:0,behavior:"smooth"});
 function hapusTransfer(i){
 
 let data = JSON.parse(localStorage.getItem("transferData")) || [];
-
 data.splice(i,1);
 
 localStorage.setItem("transferData",JSON.stringify(data));
-
 renderTransfer();
 
 }
 
 function simpanDanKirimPanen(){
 
-// simpan data
 simpan();
-
-// kirim WA
 kirimWA();
 
-// clear form
 document.getElementById("tanggal").value="";
-document.getElementById("panen").value="";
-document.getElementById("harga").value="";
-document.getElementById("upah").value="";
-
-// reset ringkasan
-document.getElementById("potongan").innerText="Rp 0";
-document.getElementById("bruto").innerText="Rp 0";
-document.getElementById("kotor").innerText="Rp 0";
-document.getElementById("fee").innerText="Rp 0";
-document.getElementById("bersih").innerText="Rp 0";
+resetHitung();
 
 }
 
 function simpanDanKirimTransfer(){
 
-// simpan data
 simpanTransfer();
-
-// kirim WA
 kirimTransferWA();
 
-// clear form
 document.getElementById("tglTransfer").value="";
 document.getElementById("jumlahTransfer").value="";
 document.getElementById("catatanTransfer").value="";
@@ -478,6 +505,7 @@ document.getElementById("editTransferIndex").value="";
 
 }
 
+cekLokasi();
 renderPanen();
 renderTransfer();
 
@@ -485,3 +513,4 @@ renderTransfer();
 
 </body>
 </html>
+```
