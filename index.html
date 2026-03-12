@@ -130,8 +130,7 @@ width:auto;
 <div><b>Total Bersih : <span id="bersih">Rp 0</span></b></div>
 </div>
 
-<button onclick="simpan();clearFormPanen()">Simpan Laporan</button>
-<button onclick="kirimWA()">Kirim WhatsApp</button>
+<button onclick="simpanDanKirimPanen()">Simpan & Kirim WhatsApp</button>
 
 </div>
 
@@ -149,8 +148,7 @@ width:auto;
 <label>Catatan</label>
 <input id="catatanTransfer">
 
-<button onclick="simpanTransfer();clearFormTransfer()">Simpan Transfer</button>
-<button onclick="kirimTransferWA()">Kirim WhatsApp</button>
+<button onclick="simpanDanKirimTransfer()">Simpan & Kirim WhatsApp</button>
 
 </div>
 
@@ -325,7 +323,7 @@ let bruto=document.getElementById("bruto").innerText;
 let text=`LAPORAN PANEN
 
 Tanggal : ${tanggal}
-Lokasi  :${lokasi}
+Lokasi  : ${lokasi}
 
 Hasil Panen      : ${panen} kg
 Harga/kg         : Rp ${harga}
@@ -335,9 +333,9 @@ Upah panen       : Rp ${upah}
 Potongan Biaya Perawatan : ${pot}
 Fee Pengawas     : ${fee}
 
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━
 Pendapatan Bersih : ${bersih}
-━━━━━━━━━━━━━━━━━━━━━`;
+━━━━━━━━━━━━━━━━━━━━━━`;
 
 let url="https://wa.me/?text="+encodeURIComponent(text);
 
@@ -353,9 +351,10 @@ let catatan=document.getElementById("catatanTransfer").value;
 
 let text=`LAPORAN TRANSFER
 
-${tanggal}
+Tanggal : ${tanggal}
 
-Jumlah : Rp ${jumlah}
+Jumlah  : Rp ${jumlah}
+
 Catatan : ${catatan}`;
 
 let url="https://wa.me/?text="+encodeURIComponent(text);
@@ -437,6 +436,45 @@ data.splice(i,1);
 localStorage.setItem("transferData",JSON.stringify(data));
 
 renderTransfer();
+
+}
+
+function simpanDanKirimPanen(){
+
+// simpan data
+simpan();
+
+// kirim WA
+kirimWA();
+
+// clear form
+document.getElementById("tanggal").value="";
+document.getElementById("panen").value="";
+document.getElementById("harga").value="";
+document.getElementById("upah").value="";
+
+// reset ringkasan
+document.getElementById("potongan").innerText="Rp 0";
+document.getElementById("bruto").innerText="Rp 0";
+document.getElementById("kotor").innerText="Rp 0";
+document.getElementById("fee").innerText="Rp 0";
+document.getElementById("bersih").innerText="Rp 0";
+
+}
+
+function simpanDanKirimTransfer(){
+
+// simpan data
+simpanTransfer();
+
+// kirim WA
+kirimTransferWA();
+
+// clear form
+document.getElementById("tglTransfer").value="";
+document.getElementById("jumlahTransfer").value="";
+document.getElementById("catatanTransfer").value="";
+document.getElementById("editTransferIndex").value="";
 
 }
 
