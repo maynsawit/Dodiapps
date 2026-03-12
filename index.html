@@ -1,10 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DodiApps - Ver 8.6 Stable</title>
+<title>DodiApps - Lite Stabil Revisi Akhir (dodiapps-ver8.9)</title>
 
 <style>
 body{
@@ -74,23 +73,59 @@ table{
 width:100%;
 border-collapse:collapse;
 font-size:13px;
+table-layout:fixed;
 }
+
 th,td{
 padding:6px;
 border-bottom:1px solid #eee;
 text-align:left;
+word-break:break-word;
 }
+
 th{
 font-weight:600;
 }
+
+/* ===== TABEL TRANSFER STABIL ===== */
+
+#tblTransfer td:nth-child(1),
+#tblTransfer th:nth-child(1){
+width:90px;
+white-space:nowrap;
+}
+
+#tblTransfer td:nth-child(2),
+#tblTransfer th:nth-child(2){
+width:110px;
+white-space:nowrap;
+}
+
+#tblTransfer td:nth-child(3){
+word-break:break-word;
+max-width:160px;
+}
+
+#tblTransfer td:nth-child(4),
+#tblTransfer th:nth-child(4){
+width:95px;
+white-space:nowrap;
+}
+
+/* patch stabilitas layar kecil */
+#tblTransfer td{
+overflow:hidden;
+text-overflow:ellipsis;
+}
 .action-btn{
 display:flex;
+flex-direction:column;
 gap:4px;
 }
 .action-btn button{
-padding:4px 6px;
-font-size:12px;
-width:auto;
+padding:3px 5px;
+font-size:11px;
+width:70px;
 }
 </style>
 </head>
@@ -166,6 +201,7 @@ width:auto;
 
 <div class="card">
 <h2>Riwayat Panen</h2>
+
 <table>
 <thead>
 <tr>
@@ -178,10 +214,17 @@ width:auto;
 </thead>
 <tbody id="tblPanen"></tbody>
 </table>
+
+<div class="summary">
+<b>TOTAL PENGHASILAN BULAN <span id="namaBulanPanen"></span> <span id="tahunPanen"></span> :
+<span id="totalPanenBulan">Rp 0</span></b>
+</div>
+
 </div>
 
 <div class="card">
 <h2>Riwayat Transfer</h2>
+
 <table>
 <thead>
 <tr>
@@ -193,6 +236,12 @@ width:auto;
 </thead>
 <tbody id="tblTransfer"></tbody>
 </table>
+
+<div class="summary">
+<b>TOTAL TRANSFER BULAN <span id="namaBulanTransfer"></span> <span id="tahunTransfer"></span> :
+<span id="totalTransferBulan">Rp 0</span></b>
+</div>
+
 </div>
 
 </div>
@@ -313,10 +362,28 @@ renderPanen();
 
 function renderPanen(){
 
-let data = JSON.parse(localStorage.getItem("panenData")) || "";
+let data = JSON.parse(localStorage.getItem("panenData")) || [];
 let html="";
 
+let now = new Date();
+let bulan = now.getMonth()+1;
+let tahun = now.getFullYear();
+let totalBulan = 0;
+
+let namaBulan=[
+"Januari","Februari","Maret","April","Mei","Juni",
+"Juli","Agustus","September","Oktober","November","Desember"
+];
+
 data.forEach((d,i)=>{
+
+let p = d.tanggal.split("-");
+let th = Number(p[0]);
+let bl = Number(p[1]);
+
+if(th===tahun && bl===bulan){
+totalBulan += Number(d.bersih)||0;
+}
 
 html += `<tr>
 <td>${d.tanggal}</td>
@@ -329,6 +396,9 @@ html += `<tr>
 });
 
 document.getElementById("tblPanen").innerHTML = html;
+document.getElementById("totalPanenBulan").innerText = rupiah(totalBulan);
+document.getElementById("namaBulanPanen").innerText = namaBulan[bulan-1];
+document.getElementById("tahunPanen").innerText = tahun;
 
 }
 
@@ -441,7 +511,25 @@ function renderTransfer(){
 let data = JSON.parse(localStorage.getItem("transferData")) || [];
 let html="";
 
+let now = new Date();
+let bulan = now.getMonth()+1;
+let tahun = now.getFullYear();
+let totalBulan = 0;
+
+let namaBulan=[
+"Januari","Februari","Maret","April","Mei","Juni",
+"Juli","Agustus","September","Oktober","November","Desember"
+];
+
 data.forEach((d,i)=>{
+
+let p = d.tanggal.split("-");
+let th = Number(p[0]);
+let bl = Number(p[1]);
+
+if(th===tahun && bl===bulan){
+totalBulan += Number(d.jumlah)||0;
+}
 
 html += `<tr>
 <td>${d.tanggal}</td>
@@ -456,6 +544,9 @@ html += `<tr>
 });
 
 document.getElementById("tblTransfer").innerHTML = html;
+document.getElementById("totalTransferBulan").innerText = rupiah(totalBulan);
+document.getElementById("namaBulanTransfer").innerText = namaBulan[bulan-1];
+document.getElementById("tahunTransfer").innerText = tahun;
 
 }
 
@@ -513,4 +604,3 @@ renderTransfer();
 
 </body>
 </html>
-```
