@@ -2,7 +2,7 @@
 "name": "DodiApps",
 "short_name": "DodiApps",
 "description": "Aplikasi pencatatan panen dan transfer",
-"start_url": "./index.html",
+"start_url": "./", 
 "display": "standalone",
 "background_color": "#2c6e3e",
 "theme_color": "#2c6e3e",
