@@ -717,6 +717,22 @@ deferredPrompt = null;
 });
 
 </script>
+<script>
+if ("serviceWorker" in navigator) {
 
+  window.addEventListener("load", function() {
+
+    navigator.serviceWorker.register("sw.js")
+      .then(function(reg) {
+        console.log("Service Worker berhasil diaktifkan");
+      })
+      .catch(function(err) {
+        console.log("Service Worker gagal:", err);
+      });
+
+  });
+
+}
+</script>
 </body>
 </html>
