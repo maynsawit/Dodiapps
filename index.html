@@ -303,6 +303,12 @@ box-shadow:0 3px 8px rgba(0,0,0,0.25);
 
 <script>
 
+function formatTanggalDDMMYYYY(tgl) {
+    if (!tgl) return "";
+    let parts = tgl.split("-");
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+}
+
 function tanggalIndonesia(tgl){
 if(!tgl) return "";
 let bulan=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -441,7 +447,7 @@ totalBulan += Number(d.bersih)||0;
 }
 
 html += `<tr>
-<td>${d.tanggal}</td>
+<td>${formatTanggalDDMMYYYY(d.tanggal)}</td>
 <td>${d.lokasi}</td>
 <td>${d.panen}</td>
 <td>${rupiah(d.bersih)}</td>
@@ -587,7 +593,7 @@ totalBulan += Number(d.jumlah)||0;
 }
 
 html += `<tr>
-<td>${d.tanggal}</td>
+<td>${formatTanggalDDMMYYYY(d.tanggal)}</td>
 <td>${rupiah(d.jumlah)}</td>
 <td>${d.catatan}</td>
 <td class="action-btn">
