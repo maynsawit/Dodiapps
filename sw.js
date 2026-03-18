@@ -1,4 +1,4 @@
-const CACHE_NAME = "dodiapps-cache-v2";
+const CACHE_NAME = "dodiapps-cache-v3";
 
 const urlsToCache = [
   "/",
